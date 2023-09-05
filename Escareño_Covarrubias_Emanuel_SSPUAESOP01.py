@@ -8,7 +8,15 @@ pending_batches = 0
 clock = 0
 pending_processes = []
 finished_processes = []
+i_button = 0
+e_button = 0
 
+def validate_input(P):
+    if P == "" or P.isdigit():
+        return True
+    else:
+        return False
+    
 # Clean the program's state
 def clean_program():
     global global_batches, pending_batches, clock, pending_processes, finished_processes
@@ -18,6 +26,8 @@ def clean_program():
     pending_processes = []
     finished_processes = []
     output_text_finished_processes.delete(1.0, tk.END)
+    i_button = 0
+    e_button = 0
 
 # Generate processes and save them to a file
 def generate_processes():
@@ -111,65 +121,104 @@ def process_processes():
         
         output_pending_batches.config(text="Lotes Pendientes: " + str(total_batches))
                 
-        for process in batch_data[:]:
-            batch_data.remove(process)
-            print_pending_processes = ''
+        while 0 != len(batch_data):
+            process = batch_data.pop(0)
+            
             print_pending_processes = '\n'.join(['\n'.join(item) + "\n" for item in batch_data])
             
             output_text_pending_processes.delete(1.0, tk.END)
             output_text_pending_processes.insert(tk.END, print_pending_processes)
             
             process = processing(process)
-            
-            finished_processes.append(process)
-            print_finished_processes = ''
-            print_finished_processes = '\n'.join(['\n'.join(item) + "\n" for item in finished_processes])
-            
-            output_text_finished_processes.delete(1.0, tk.END)
-            output_text_finished_processes.insert(tk.END, print_finished_processes)
-
+            if len(process) == 3:
+                batch_data.append(process)
+            else:
+                finished_processes.append(process)
+                show_finished_processes()
+                
         output_text_pending_processes.delete(1.0, tk.END)
 
 # Process individual process            
 def processing(process):
-    global clock
+    global clock, i_button, e_button
     operation = process[1]
     tme = process[2].split(':')
     tme = int(tme[1])
     for _ in range(tme):
         time.sleep(1)
+        process_update = process[0] + "\n" + process[1] + "\nTME: " + str(tme) + "\n" 
+        output_text_process.delete(1.0, tk.END)
+        output_text_process.insert(tk.END, process_update)
         clock += 1
         output_clock.config(text="Reloj Global: " + str(clock))
         tme -= 1
+        process[2] = 'TME:'+str(tme)
         
-        process_update = process[0] + "\n" + process[1] + "\nTME: " + str(tme) + "\n" 
-        
-        output_text_process.delete(1.0, tk.END)
-        output_text_process.insert(tk.END, process_update)
-        
+        if(i_button == 1):
+            i_button = 0
+            output_text_process.delete(1.0, tk.END)
+            return process
+        if(e_button == 1):
+            e_button = 0
+            output_text_process.delete(1.0, tk.END)
+            return [process[0], process[1] + " = Error"]
+            
+            
+        # Refresh the window to see the changes
         root.update()
+        
     output_text_process.delete(1.0, tk.END)
     try:
         result = eval(process[1])
         return [process[0], process[1] + " = " + str(round(result,2))]
     except ZeroDivisionError:
-        return [process[0], process[1] + " = Error: División entre cero"]
+        return [process[0], process[1] + " = Error"]
+
+# Show completed processes 
+def show_finished_processes():
+    print_finished_processes = '===| Lote 1 |======\n\n'
+    
+    index = 0
+    batch_count = 1
+    for process in finished_processes:
+        index+=1
+        
+        for item in process:
+            print_finished_processes = print_finished_processes+item+'\n'
+        print_finished_processes = print_finished_processes+'\n'
+        if(index < len(finished_processes) and index % 5 == 0):
+            batch_count+=1
+            print_finished_processes = print_finished_processes+'===| Lote '+str(batch_count)+' |======\n\n'
+            
+    output_text_finished_processes.delete(1.0, tk.END)
+    output_text_finished_processes.insert(tk.END, print_finished_processes)
 
 # Get results and save them to a file
 def get_results():
-    with open("Resultados.txt", "w") as archivo:
+    with open("Resultados.txt", "w") as file:
         
-        archivo.write("Lote 1\n\n")
+        file.write("Lote 1\n\n")
         batch_counter = 1
         counter = 0
         for process in finished_processes:
-            archivo.write(str(process[0]) + "\n")
-            archivo.write(str(process[1]) + "\n\n")
+            file.write(str(process[0]) + "\n")
+            file.write(str(process[1]) + "\n\n")
             counter += 1
         
             if counter % 5 == 0 and counter != len(finished_processes):
                 batch_counter += 1
-                archivo.write("Lote " + str(batch_counter) + "\n\n")
+                file.write("Lote " + str(batch_counter) + "\n\n")
+
+
+def interruption_button():
+    global i_button
+    i_button = 1   
+    return
+
+def error_button():
+    global e_button
+    e_button = 1
+    return
 
 # Create the GUI interface
 root = tk.Tk()
@@ -179,7 +228,8 @@ root = tk.Tk()
 process_label = tk.Label(root, text="# Procesos:")
 process_label.grid(row=0, column=0, padx=5, pady=0)
 
-input_process_num = tk.Entry(root)
+validate_cmd = root.register(validate_input)
+input_process_num = tk.Entry(root, validate="key", validatecommand=(validate_cmd, "%P"))
 input_process_num.grid(row=1, column=0, padx=0, pady=20)
 
 button_generate = tk.Button(root, text="GENERAR", command=generate_processes)
@@ -207,12 +257,20 @@ output_text_process.grid(row=3, column=1, padx=10, pady=10)
 output_text_finished_processes = tk.Text(root, height=15, width=20)
 output_text_finished_processes.grid(row=3, column=2, padx=10, pady=0)
 
-# Grid Bottom
+# Grids Bottom
+# Button to interrupt process and generate error
+button_get = tk.Button(root, text="INTERRUPCIÓN [X]", command=interruption_button)
+button_get.grid(row=4, column=0, padx=5, pady=20)
+
+button_get = tk.Button(root, text="ERROR [/]", command=error_button)
+button_get.grid(row=4, column=1, padx=5, pady=20)
+
+# Number of batches and button to get results
 output_pending_batches = tk.Label(root, text="# de Lotes pendientes")
-output_pending_batches.grid(row=4, column=0, padx=5, pady=20)
+output_pending_batches.grid(row=5, column=0, padx=5, pady=20)
 
 button_get = tk.Button(root, text="OBTENER RESULTADOS", command=get_results)
-button_get.grid(row=4, column=2, padx=5, pady=20)
+button_get.grid(row=5, column=2, padx=5, pady=20)
 
 root.title("ProcesamientoPorLotes")
 
