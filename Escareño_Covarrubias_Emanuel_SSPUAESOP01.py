@@ -11,15 +11,16 @@ finished_processes = []
 i_button = 0
 e_button = 0
 
+# Validate numeric inputs
 def validate_input(P):
     if P == "" or P.isdigit():
         return True
     else:
         return False
     
-# Clean the program's state
+# Clear program variables
 def clean_program():
-    global global_batches, pending_batches, clock, pending_processes, finished_processes
+    global global_batches, pending_batches, clock, pending_processes, finished_processes, e_button, i_button
     global_batches = []
     pending_batches = 0
     clock = 0
@@ -87,7 +88,7 @@ def load_processes():
         tasks_batch = []
         task_name = ''
         task_task = ''
-        task_tme = ''
+        task_tleft = ''
         
         # Process individual tasks in a batch
         for task in tasks:
@@ -103,9 +104,16 @@ def load_processes():
                 if flag == 1 and task_flag == 3:
                     task_tme = task
                     task_flag = 1
+                    
+                    time_left = task_tme.split(':')
+                    time_left = time_left[1]
+    
+                    task_tleft = "TR:"+str(time_left)
                 if task_flag == 1:
-                    tasks_batch.append([task_name, task_task, task_tme])
+                    # Add the items to a batch
+                    tasks_batch.append([task_name, task_task, task_tme, task_tleft])
                 flag = 1
+                # Add the batches to an array
         global_batches.append(tasks_batch)
     global_batches.pop(0)
     process_processes()
@@ -119,6 +127,7 @@ def process_processes():
     for batch_data in global_batches:
         total_batches -= 1
         
+        # Print pending batches
         output_pending_batches.config(text="Lotes Pendientes: " + str(total_batches))
                 
         while 0 != len(batch_data):
@@ -126,16 +135,18 @@ def process_processes():
             
             print_pending_processes = '\n'.join(['\n'.join(item) + "\n" for item in batch_data])
             
+            # Clean and print pending processes
             output_text_pending_processes.delete(1.0, tk.END)
             output_text_pending_processes.insert(tk.END, print_pending_processes)
             
             process = processing(process)
-            if len(process) == 3:
+            if len(process) == 4:
                 batch_data.append(process)
             else:
                 finished_processes.append(process)
                 show_finished_processes()
                 
+        # Clean pending processes        
         output_text_pending_processes.delete(1.0, tk.END)
 
 # Process individual process            
@@ -144,15 +155,22 @@ def processing(process):
     operation = process[1]
     tme = process[2].split(':')
     tme = int(tme[1])
-    for _ in range(tme):
+    
+    tr = process[3].split(':')
+    tr = int(tr[1])
+    
+    # Execute time te
+    te = 0
+    for _ in range(tr):
         time.sleep(1)
-        process_update = process[0] + "\n" + process[1] + "\nTME: " + str(tme) + "\n" 
+        te+=1
+        process_update = process[0] + "\n" + process[1] + "\nTE: " + str(te) + "\n" + "TF: " + str(tr) + "\n" 
         output_text_process.delete(1.0, tk.END)
         output_text_process.insert(tk.END, process_update)
         clock += 1
         output_clock.config(text="Reloj Global: " + str(clock))
-        tme -= 1
-        process[2] = 'TME:'+str(tme)
+        tr -= 1
+        process[3] = 'TR:'+str(tr)
         
         if(i_button == 1):
             i_button = 0
@@ -251,7 +269,7 @@ output_label_finished_processes.grid(row=2, column=2, padx=5, pady=0)
 output_text_pending_processes = tk.Text(root, height=15, width=20)
 output_text_pending_processes.grid(row=3, column=0, padx=10, pady=0)
 
-output_text_process = tk.Text(root, height=3, width=20)
+output_text_process = tk.Text(root, height=5, width=20)
 output_text_process.grid(row=3, column=1, padx=10, pady=10)
 
 output_text_finished_processes = tk.Text(root, height=15, width=20)
