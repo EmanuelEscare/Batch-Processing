@@ -164,7 +164,7 @@ def processing(process):
     for _ in range(tr):
         time.sleep(1)
         te+=1
-        process_update = process[0] + "\n" + process[1] + "\nTE: " + str(te) + "\n" + "TF: " + str(tr) + "\n" 
+        process_update = process[0] + "\n" + process[1] + "\nTEJECUCION: " + str(te) + "\n" + "TRESTANTE: " + str(tr) + "\n" 
         output_text_process.delete(1.0, tk.END)
         output_text_process.insert(tk.END, process_update)
         clock += 1
