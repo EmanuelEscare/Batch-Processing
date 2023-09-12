@@ -151,6 +151,7 @@ def process_processes():
 
 # Process individual process            
 def processing(process):
+    message_process.config(text="")
     global clock, i_button, e_button
     operation = process[1]
     tme = process[2].split(':')
@@ -230,12 +231,14 @@ def get_results():
 
 def interruption_button():
     global i_button
-    i_button = 1   
+    i_button = 1 
+    message_process.config(text="Interrupcion en el proceso",fg="blue")  
     return
 
 def error_button():
     global e_button
     e_button = 1
+    message_process.config(text="Error en el proceso",fg="red")  
     return
 
 # Create the GUI interface
@@ -286,6 +289,9 @@ button_get.grid(row=4, column=1, padx=5, pady=20)
 # Number of batches and button to get results
 output_pending_batches = tk.Label(root, text="# de Lotes pendientes")
 output_pending_batches.grid(row=5, column=0, padx=5, pady=20)
+
+message_process = tk.Label(root, text="")
+message_process.grid(row=5, column=1, padx=5, pady=20)
 
 button_get = tk.Button(root, text="OBTENER RESULTADOS", command=get_results)
 button_get.grid(row=5, column=2, padx=5, pady=20)
